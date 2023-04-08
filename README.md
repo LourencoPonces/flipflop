@@ -6,13 +6,23 @@ This project is a game developed in C language, similar to the Reversi strategy 
 
 The game is played on an 8x8 board, where each player has a set of pieces, with two faces, one white ('O') and one black ('X'). The players take turns placing their pieces on the board, attempting to capture their opponent's pieces by surrounding them with their own pieces. The game ends when the board is completely filled, or one player has no pieces left on the board.
 
-## Functionalities
+## Running the game
 
-The program should be executed from the command line with the following options:
+To run the game, open a terminal and navigate to the project directory. Then, compile the code with the following command:
 
-- `-f file_name`: Saves all the game data and moves in a file.
+gcc -Wall -Werror -pedantic -ansi \*.c -o flipflop
+
+To start the game, run the following command:
+
+./flipflop [options]
+
+Replace `[options]` with any of the following command-line options:
+
+- `-f nome_ficheiro`: Saves all the game data and moves in a file.
 - `-p X`: Sets the human player's piece to X or O.
 - `-u`: Allows the human player to undo moves.
+
+## Algorithm for computer player
 
 The computer player must use an algorithm to determine the best move to make. The algorithm should:
 
@@ -24,6 +34,10 @@ The computer player must use an algorithm to determine the best move to make. Th
 ## Disclaimer
 
 The project specifications may be incomplete or ambiguous, in which case the programmer may use their best judgement to fill in the gaps.
+
+## Project statement
+
+For more information on the project requirements, please refer to the [project statement](https://github.com/IST-DepartamentoEngenhariaEletrotecnicaElectronicaComputadores/LEIC-A-IST/blob/master/Programacao/Enunciados/flipflop.pdf) provided by Instituto Superior Técnico.
 
 ## Acknowledgements
 
