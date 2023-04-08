@@ -10,11 +10,11 @@ The game is played on an 8x8 board, where each player has a set of pieces, with 
 
 To run the game, open a terminal and navigate to the project directory. Then, compile the code with the following command:
 
-gcc -Wall -Werror -pedantic -ansi \*.c -o flipflop
+`gcc -Wall -Werror -pedantic -ansi \*.c -o flipflop`
 
 To start the game, run the following command:
 
-./flipflop [options]
+`./flipflop [options]`
 
 Replace `[options]` with any of the following command-line options:
 
