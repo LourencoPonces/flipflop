@@ -10,7 +10,7 @@ The game is played on an 8x8 board, where each player has a set of pieces, with 
 
 The program should be executed from the command line with the following options:
 
-- `-f nome_ficheiro`: Saves all the game data and moves in a file.
+- `-f file_name`: Saves all the game data and moves in a file.
 - `-p X`: Sets the human player's piece to X or O.
 - `-u`: Allows the human player to undo moves.
 
