@@ -1,343 +1,475 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <ctype.h>
 
 #define BOARD_SIZE 8
 
-char board[BOARD_SIZE][BOARD_SIZE];
+enum Piece
+{
+    Empty,
+    Black,
+    White
+};
 
-typedef struct _move
+enum Piece board[BOARD_SIZE][BOARD_SIZE];
+
+enum Piece current_player;
+
+// Linked list node that represents a move on the game board
+struct Move
 {
     int row;
     int col;
-    int num_flips;
-    struct _move *next;
-} Move;
+    struct Move *prev;
+};
 
-void init_board();
-void print_board();
-int is_valid_move(int row, int col, char color);
-int flip_discs(int row, int col, int d_row, int d_col, char color);
-void make_move(int row, int col, char color);
-int count_flips(int row, int col, char color);
-void get_move(int *row, int *col, char color);
-char opponent_color(char color);
-void game_over();
-void get_ai_move(int *row, int *col, char color);
-void ai_make_move(char color);
-void add_move(int row, int col, int num_flips, Move **move_list);
-void free_moves(Move *move_list);
+typedef struct Move Move;
 
-char current_color = 'X';
-char player_color = 'X';
-char ai_color = 'O';
-int save_moves = 0;
-char *save_file = NULL;
-int allow_undo = 0;
+Move *head = NULL;
 
-int main(int argc, char *argv[])
+// Function to initialize the game board with empty spaces and initial pieces
+void initialize_board()
 {
-
-    // Parse command-line arguments
-    for (int i = 1; i < argc; i++)
+    for (int i = 0; i < BOARD_SIZE; i++)
     {
-        if (strcmp(argv[i], "-f") == 0 && i + 1 < argc)
+        for (int j = 0; j < BOARD_SIZE; j++)
         {
-            save_moves = 1;
-            save_file = argv[i + 1];
-            i++;
-        }
-        else if (strcmp(argv[i], "-p") == 0 && i + 1 < argc)
-        {
-            player_color = toupper(argv[i + 1][0]);
-            ai_color = (player_color == 'X') ? 'O' : 'X';
-            i++;
-        }
-        else if (strcmp(argv[i], "-u") == 0)
-        {
-            allow_undo = 1;
+            board[i][j] = Empty;
         }
     }
-
-    init_board();
-
-    while (1)
-    {
-        if (current_color == ai_color)
-        {
-            int row, col;
-            get_ai_move(&row, &col, current_color);
-            printf("AI chooses row %d, col %d.\n", row, col);
-            make_move(row, col, current_color);
-        }
-        else
-        {
-            print_board();
-
-            if (save_moves && save_file)
-            {
-                // TODO: Implement saving of moves to file
-            }
-
-            /*
-            if (!has_valid_move(current_color))
-            {
-                printf("%c has no valid moves.\n", current_color);
-                current_color = opponent_color(current_color);
-                if (!has_valid_move(current_color))
-                {
-                    game_over();
-                    return 0;
-                }
-            }
-            */
-
-            int row, col;
-            get_move(&row, &col, current_color);
-
-            if (!is_valid_move(row, col, current_color))
-            {
-                printf("Invalid move. Try again.\n");
-                continue;
-            }
-
-            make_move(row, col, current_color);
-        }
-
-        current_color = opponent_color(current_color);
-    }
-
-    return 0;
+    board[3][3] = White;
+    board[4][4] = White;
+    board[3][4] = Black;
+    board[4][3] = Black;
 }
 
-void init_board()
-{
-    int i, j;
-
-    for (i = 0; i < BOARD_SIZE; i++)
-    {
-        for (j = 0; j < BOARD_SIZE; j++)
-        {
-            board[i][j] = '.';
-        }
-    }
-
-    board[3][3] = 'X';
-    board[4][4] = 'X';
-    board[3][4] = 'O';
-    board[4][3] = 'O';
-}
-
+// Function to print the game board to the console
 void print_board()
 {
-    int i, j;
-
-    printf("\n  ");
-    for (j = 0; j < BOARD_SIZE; j++)
-    {
-        printf("%d ", j);
-    }
-    printf("\n");
-
-    for (i = 0; i < BOARD_SIZE; i++)
+    printf("  ");
+    for (int i = 0; i < BOARD_SIZE; i++)
     {
         printf("%d ", i);
-        for (j = 0; j < BOARD_SIZE; j++)
+    }
+    printf("\n");
+    for (int i = 0; i < BOARD_SIZE; i++)
+    {
+        printf("%d ", i);
+        for (int j = 0; j < BOARD_SIZE; j++)
         {
-            printf("%c ", board[i][j]);
+            switch (board[i][j])
+            {
+            case Empty:
+                printf(". ");
+                break;
+            case Black:
+                printf("X ");
+                break;
+            case White:
+                printf("O ");
+                break;
+            }
         }
         printf("\n");
     }
 }
 
-int is_valid_move(int row, int col, char color)
+// Function to switch the current player
+void switch_player()
 {
-    if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE || board[row][col] != '.')
+    current_player = (current_player == Black) ? White : Black;
+}
+
+// Function to check if a move is valid
+int is_valid_move(int row, int col)
+{
+    if (row < 0 || row >= BOARD_SIZE || col < 0 || col >= BOARD_SIZE ||
+        board[row][col] != Empty)
     {
         return 0;
     }
-
-    int d_row, d_col;
-    for (d_row = -1; d_row <= 1; d_row++)
+    int r, c;
+    for (int dr = -1; dr <= 1; dr++)
     {
-        for (d_col = -1; d_col <= 1; d_col++)
+        for (int dc = -1; dc <= 1; dc++)
         {
-            if (d_row == 0 && d_col == 0)
+            if (dr == 0 && dc == 0)
             {
                 continue;
             }
+            r = row + dr;
+            c = col + dc;
+            int found_other = 0;
+            while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE)
+            {
+                if (board[r][c] == Empty)
+                {
+                    break;
+                }
+                if (board[r][c] == current_player)
+                {
+                    if (found_other)
+                    {
+                        return 1;
+                    }
+                    break;
+                }
+                found_other = 1;
+                r += dr;
+                c += dc;
+            }
+        }
+    }
+    return 0;
+}
 
-            if (flip_discs(row, col, d_row, d_col, color))
+// Function to make a move on the game board
+void make_move(int row, int col)
+{
+    board[row][col] = current_player;
+    Move *move = (Move *)malloc(sizeof(Move));
+    move->row = row;
+    move->col = col;
+    move->prev = head;
+    head = move;
+    int r, c;
+    for (int dr = -1; dr <= 1; dr++)
+    {
+        for (int dc = -1; dc <= 1; dc++)
+        {
+            if (dr == 0 && dc == 0)
+            {
+                continue;
+            }
+            r = row + dr;
+            c = col + dc;
+            int found_other = 0;
+            while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE)
+            {
+                if (board[r][c] == Empty)
+                {
+                    break;
+                }
+                if (board[r][c] == current_player)
+                {
+                    if (found_other)
+                    {
+                        r -= dr;
+                        c -= dc;
+                        while (board[r][c] != current_player)
+                        {
+                            board[r][c] = current_player;
+                            r -= dr;
+                            c -= dc;
+                        }
+                    }
+                    break;
+                }
+                found_other = 1;
+                r += dr;
+                c += dc;
+            }
+        }
+    }
+}
+
+// Function to count the number of opponent pieces that can be flipped in a certain direction
+int count_opponent_pieces(int row, int col, int dr, int dc)
+{
+    int r = row + dr;
+    int c = col + dc;
+    int count = 0;
+    while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE)
+    {
+        if (board[r][c] == current_player)
+        {
+            return count;
+        }
+        if (board[r][c] == Empty)
+        {
+            return 0;
+        }
+        count++;
+        r += dr;
+        c += dc;
+    }
+    return 0;
+}
+
+// Function to evaluate the value of a position on the game board
+int evaluate_position(int row, int col)
+{
+    int value = 0;
+    for (int dr = -1; dr <= 1; dr++)
+    {
+        for (int dc = -1; dc <= 1; dc++)
+        {
+            if (dr == 0 && dc == 0)
+            {
+                continue;
+            }
+            value += count_opponent_pieces(row, col, dr, dc);
+        }
+    }
+    return value;
+}
+
+// Function to check if the current player has any valid moves
+int has_valid_moves()
+{
+    for (int row = 0; row < BOARD_SIZE; row++)
+    {
+        for (int col = 0; col < BOARD_SIZE; col++)
+        {
+            if (is_valid_move(row, col))
             {
                 return 1;
             }
         }
     }
-
     return 0;
 }
 
-int flip_discs(int row, int col, int d_row, int d_col, char color)
+// Function to undo the last move made on the game board
+void undo_move()
 {
-    int flip_count = 0;
-    char opp_color = opponent_color(color);
-
-    int r = row + d_row;
-    int c = col + d_col;
-
-    while (r >= 0 && r < BOARD_SIZE && c >= 0 && c < BOARD_SIZE && board[r][c] == opp_color)
+    if (head != NULL)
     {
-        r += d_row;
-        c += d_col;
-        flip_count++;
-    }
-
-    if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE || board[r][c] != color)
-    {
-        flip_count = 0;
-    }
-
-    return flip_count;
-}
-
-void make_move(int row, int col, char color)
-{
-    int d_row, d_col;
-
-    for (d_row = -1; d_row <= 1; d_row++)
-    {
-        for (d_col = -1; d_col <= 1; d_col++)
-        {
-            if (d_row == 0 && d_col == 0)
-            {
-                continue;
-            }
-
-            flip_discs(row, col, d_row, d_col, color);
-        }
+        board[head->row][head->col] = Empty;
+        Move *temp = head;
+        head = head->prev;
+        free(temp);
     }
 }
 
-void ai_make_move(char color)
+// Function to play the game
+void play_game(int save_moves, FILE *fp, char *player_choice, int undo_moves, char *file_name)
 {
-    int i, j, k;
-    int max_flips = -1;
     int row, col;
-    int **flips;
-
-    flips = (int **)malloc(sizeof(int *) * BOARD_SIZE);
-    for (i = 0; i < BOARD_SIZE; i++)
+    int valid_move;
+    int black_score = 2, white_score = 2;
+    initialize_board();
+    if (player_choice != NULL && player_choice[0] == 'O')
     {
-        flips[i] = (int *)malloc(sizeof(int) * BOARD_SIZE);
-        for (j = 0; j < BOARD_SIZE; j++)
-        {
-            flips[i][j] = 0;
-        }
+        current_player = White;
     }
-
-    for (i = 0; i < BOARD_SIZE; i++)
+    else
     {
-        for (j = 0; j < BOARD_SIZE; j++)
+        current_player = Black;
+    }
+    if (save_moves)
+    {
+        fp = fopen(file_name, "w");
+    }
+    while (has_valid_moves())
+    {
+        if (current_player == White)
         {
-            if (is_valid_move(i, j, color))
+            int max_value = -1000;
+            int best_row, best_col;
+            for (int i = 0; i < BOARD_SIZE; i++)
             {
-                for (k = -1; k <= 1; k++)
+                for (int j = 0; j < BOARD_SIZE; j++)
                 {
-                    for (int l = -1; l <= 1; l++)
+                    if (is_valid_move(i, j))
                     {
-                        if (k == 0 && l == 0)
+                        int value = evaluate_position(i, j);
+                        if (value > max_value)
                         {
-                            continue;
+                            max_value = value;
+                            best_row = i;
+                            best_col = j;
                         }
-
-                        flips[i][j] += flip_discs(i, j, k, l, opponent_color(color));
                     }
                 }
-
-                if (flips[i][j] > max_flips)
+            }
+            row = best_row;
+            col = best_col;
+            printf("Computer played: %d %d\n", row, col);
+            if (save_moves && fp != NULL)
+            {
+                fprintf(fp, "%d %d\n", row, col);
+                fflush(fp);
+            }
+        }
+        else
+        {
+            valid_move = 0;
+            printf("\n");
+            print_board();
+            printf("\n");
+            printf("Current player: %s\n", (current_player == Black) ? "Black" : "White");
+            while (!valid_move)
+            {
+                printf("Enter row and column: ");
+                scanf("%d %d", &row, &col);
+                if (is_valid_move(row, col))
                 {
-                    max_flips = flips[i][j];
-                    row = i;
-                    col = j;
+                    valid_move = 1;
+                }
+                else
+                {
+                    printf("Invalid move, please try again.\n");
+                }
+            }
+            if (undo_moves)
+            {
+                Move *new_move = (Move *)malloc(sizeof(Move));
+                new_move->row = row;
+                new_move->col = col;
+                new_move->prev = head;
+                head = new_move;
+            }
+            if (save_moves && fp != NULL)
+            {
+                fprintf(fp, "Player %s played: %d %d\n", (current_player == Black) ? "Black" : "White", row, col);
+            }
+        }
+        make_move(row, col);
+        black_score = 0, white_score = 0;
+        for (int i = 0; i < BOARD_SIZE; i++)
+        {
+            for (int j = 0; j < BOARD_SIZE; j++)
+            {
+                if (board[i][j] == Black)
+                {
+                    black_score++;
+                }
+                else if (board[i][j] == White)
+                {
+                    white_score++;
                 }
             }
         }
-    }
-
-    for (i = 0; i < BOARD_SIZE; i++)
-    {
-        free(flips[i]);
-    }
-    free(flips);
-
-    printf("AI is thinking...\n");
-    printf("AI chose row %d, column %d.\n", row, col);
-    make_move(row, col, color);
-}
-
-void get_move(int *row, int *col, char color)
-{
-    printf("Enter row and column (e.g. '3 4'):");
-    scanf("%d %d", row, col);
-    (*row)--;
-    (*col)--;
-}
-
-void game_over()
-{
-    int i, j;
-    int x_count = 0, o_count = 0;
-
-    for (i = 0; i < BOARD_SIZE; i++)
-    {
-        for (j = 0; j < BOARD_SIZE; j++)
+        printf("Black: %d\n", black_score);
+        printf("White: %d\n", white_score);
+        if (save_moves && fp != NULL)
         {
-            if (board[i][j] == 'X')
+            fprintf(fp, "Black: %d\n", black_score);
+            fprintf(fp, "White: %d\n", white_score);
+        }
+        switch_player();
+        if (undo_moves && current_player == Black && head != NULL)
+        {
+            char undo_choice;
+            printf("Do you want to undo the last move? (y/n): ");
+            scanf(" %c", &undo_choice);
+            if (undo_choice == 'y')
             {
-                x_count++;
-            }
-            else if (board[i][j] == 'O')
-            {
-                o_count++;
+                undo_move();
+                printf("Last move undone.\n");
+                if (save_moves && fp != NULL)
+                {
+                    fprintf(fp, "Last move undone.\n");
+                }
+                switch_player();
             }
         }
     }
-
-    printf("Game over!\n");
-    printf("X: %d\n", x_count);
-    printf("O: %d\n", o_count);
-    if (x_count > o_count)
+    printf("\n");
+    print_board();
+    printf("\n");
+    if (black_score > white_score)
     {
-        printf("X wins!\n");
+        printf("Black wins!\n");
+        if (save_moves && fp != NULL)
+        {
+            fprintf(fp, "Black wins!\n");
+        }
     }
-    else if (o_count > x_count)
+    else if (white_score > black_score)
     {
-        printf("O wins!\n");
+        printf("White wins!\n");
+        if (save_moves && fp != NULL)
+        {
+            fprintf(fp, "White wins!\n");
+        }
     }
     else
     {
         printf("It's a tie!\n");
+        if (save_moves && fp != NULL)
+        {
+            fprintf(fp, "It's a tie!\n");
+        }
+    }
+    if (save_moves && fp != NULL)
+    {
+        fclose(fp);
+    }
+}
+
+// Main function
+int main(int argc, char *argv[])
+{
+    int save_moves = 0;
+    char *file_name = NULL;
+    char *player_choice = NULL;
+    int undo_moves = 0;
+    FILE *fp = NULL;
+
+    // Parse command line arguments
+    int i = 1;
+    while (i < argc)
+    {
+        if (strcmp(argv[i], "-f") == 0 && i < argc - 1)
+        {
+            save_moves = 1;
+            file_name = argv[i + 1];
+            i += 2;
+        }
+        else if (strcmp(argv[i], "-p") == 0 && i < argc - 1)
+        {
+            player_choice = argv[i + 1];
+            i += 2;
+        }
+        else if (strcmp(argv[i], "-u") == 0)
+        {
+            undo_moves = 1;
+            i++;
+        }
+        else
+        {
+            printf("Invalid argument: %s\n", argv[i]);
+            printf("Usage: ./reversi [-f file_name] [-p X|O] [-u]\n");
+            return 1;
+        }
     }
 
-    if (ai_color == 'X' && x_count > o_count)
+    // Validate player choice argument
+    if (player_choice != NULL && strcmp(player_choice, "X") != 0 && strcmp(player_choice, "O") != 0)
     {
-        printf("The AI player (O) has lost!\n");
+        printf("Invalid player choice: %s\n", player_choice);
+        printf("Usage: ./reversi [-f file_name] [-p X|O] [-u]\n");
+        return 1;
     }
-    else if (ai_color == 'O' && o_count > x_count)
+
+    // Open file for saving moves, if requested
+    if (save_moves)
     {
-        printf("The AI player (X) has lost!\n");
+        fp = fopen(file_name, "w");
+        if (fp == NULL)
+        {
+            printf("Error opening file %s\n", file_name);
+            return 1;
+        }
     }
-    else if (ai_color == 'X' && o_count > x_count)
+
+    // Start game
+    play_game(save_moves, fp, player_choice, undo_moves, file_name);
+
+    // Clean up
+    if (fp != NULL)
     {
-        printf("The AI player (O) has won!\n");
+        fclose(fp);
     }
-    else if (ai_color == 'O' && x_count > o_count)
+    Move *current_move = head;
+    while (current_move != NULL)
     {
-        printf("The AI player (X) has won!\n");
+        Move *next_move = current_move->prev;
+        free(current_move);
+        current_move = next_move;
     }
-    else
-    {
-        printf("The game was a draw!\n");
-    }
+
+    return 0;
 }
