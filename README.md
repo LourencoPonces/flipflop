@@ -37,7 +37,7 @@ The project specifications may be incomplete or ambiguous, in which case the pro
 
 ## Project statement
 
-For more information on the project requirements, please refer to the [project statement](https://github.com/IST-DepartamentoEngenhariaEletrotecnicaElectronicaComputadores/LEIC-A-IST/blob/master/Programacao/Enunciados/flipflop.pdf) provided by Instituto Superior Técnico.
+For more information on the project requirements, please refer to the [project statement](https://github.com/LourencoPonces/flipflop/blob/master/project_statement.pdf) provided by Instituto Superior Técnico.
 
 ## Acknowledgements
 
