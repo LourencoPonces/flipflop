@@ -24,16 +24,12 @@ Replace `[options]` with any of the following command-line options:
 
 ## Algorithm for computer player
 
-The computer player must use an algorithm to determine the best move to make. The algorithm should:
+To determine the best move to make, the computer player algorithm follows these steps:
 
-1. Look for all possible moves that could result in capturing the opponent's pieces.
-2. Determine the number of opponent's pieces that would be captured with each possible move.
-3. Mark the positions on the board where a move can be made, with the 'P' symbol.
-4. Choose the position that results in the most opponent's pieces captured. If multiple positions result in the same number of pieces captured, choose the one with the lowest x and y coordinates.
-
-## Disclaimer
-
-The project specifications may be incomplete or ambiguous, in which case the programmer may use their best judgement to fill in the gaps.
+1. It identifies all the possible moves that could result in capturing the opponent's pieces.
+2. For each move, the algorithm determines the number of opponent's pieces that would be captured.
+3. The algorithm marks the positions on the board where a move can be made with the 'P' symbol.
+4. Finally, the algorithm selects the position that results in the most opponent's pieces captured. If there are multiple positions with the same number of captured pieces, the algorithm chooses the one with the lowest x and y coordinates.
 
 ## Project statement
 
