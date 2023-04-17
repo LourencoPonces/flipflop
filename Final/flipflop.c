@@ -18,11 +18,11 @@ int main(int argc, char *argv[])
         }
         else if (strcmp(argv[i], "-p") == 0 && i < argc - 1)
         {
-            if (strcmp(argv[i + 1], "X"))
+            if (strcmp(argv[i + 1], "X") == 0)
             {
                 pecaJogador = PRETO;
             }
-            if (strcmp(argv[i + 1], "O"))
+            if (strcmp(argv[i + 1], "O") == 0)
             {
                 pecaJogador = BRANCO;
             }
